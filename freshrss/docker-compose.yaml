@@ -1,0 +1,40 @@
+services:
+
+  ts-freshrss:
+    image: tailscale/tailscale:latest
+    container_name: ts-freshrss
+    hostname: freshrss
+    environment:
+      - TS_AUTHKEY=tskey-client-ephemeral=false
+      - "TS_EXTRA_ARGS=--advertise-tags=tag:container --reset"
+      - TS_SERVE_CONFIG=/config/freshrss.json
+      - TS_STATE_DIR=/var/lib/tailscale
+    volumes:
+      - ${PWD}/config:/config
+      - ts-freshrss:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    restart: unless-stopped
+
+  freshrss:
+    image: lscr.io/linuxserver/freshrss:latest
+    container_name: freshrss
+    network_mode: service:ts-freshrss
+    depends_on:
+      - ts-freshrss
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Bucharest
+    volumes:
+      - freshrss-data:/config
+    restart: unless-stopped
+
+volumes:
+  ts-freshrss:
+    driver: local
+  freshrss-data:
+    driver: local
+

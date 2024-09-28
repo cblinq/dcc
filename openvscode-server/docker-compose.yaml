@@ -1,0 +1,39 @@
+services:
+
+  ts-openvscode-server:
+    image: tailscale/tailscale:latest
+    container_name: ts-openvscode-server
+    hostname: openvscode-server
+    environment:
+      - TS_AUTHKEY=tskey-client-?ephemeral=false
+      - "TS_EXTRA_ARGS=--advertise-tags=tag:container --reset"
+      - TS_SERVE_CONFIG=/config/openvscode-server.json
+      - TS_STATE_DIR=/var/lib/tailscale
+    volumes:
+      - ${PWD}/config:/config
+      - ts-openvscode-server:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    restart: unless-stopped
+
+  openvscode-server:
+    image: lscr.io/linuxserver/openvscode-server:latest
+    container_name: openvscode-server
+    network_mode: service:ts-openvscode-server
+    depends_on:
+      - ts-openvscode-server
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Bucharest
+    volumes:
+      - openvscode-server-config/config:/config
+    restart: unless-stopped
+
+volumes:
+  ts-openvscode-server:
+    driver: local
+  openvscode-server-config:
+    driver: local

@@ -1,0 +1,38 @@
+services:
+
+  ts-portainer:
+    image: tailscale/tailscale:latest
+    container_name: ts-portainer
+    hostname: portainer
+    environment:
+      - TS_AUTHKEY=tskey-client-?ephemeral=false
+      - TS_SERVE_CONFIG=/config/portainer.json
+      - "TS_EXTRA_ARGS=--advertise-tags=tag:container --reset"
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+    volumes:
+      - ts-portainer:/state:/var/lib/tailscale
+      - ${PWD}/config:/config
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    restart: unless-stopped
+
+
+  portainer:
+    image: portainer/portainer-ce:2.21.0-rc2
+    container_name: portainer
+    network_mode: service:ts-portainer
+    depends_on:
+      - ts-portainer
+    volumes:
+      - portainer_data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+
+volumes:
+  ts-portainer:
+    driver: local
+  portainer_data:
+    driver: local
